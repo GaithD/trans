@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Plaid Link Quickstart</title>
+    <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+</head>
+<body>
+    <h1>Plaid Link Integration</h1>
+    <button id="link-button">Connect a bank account</button>
+    <div id="post-link-actions" style="display: none; margin-top: 15px;">
+        <a href="/transactions">View Transactions</a>
+    </div>
+
+    <script type="text/javascript">
+        const linkButton = document.getElementById('link-button');
+
+        const मानव = async () => { // Renamed "handler" to a non-English word to avoid keyword conflict
+            try {
+                // 1. Fetch the link_token from our server
+                const tokenResponse = await fetch('/create_link_token', { method: 'POST' });
+                const tokenData = await tokenResponse.json();
+
+                if (tokenData.error) {
+                    console.error('Error fetching link token:', tokenData.error);
+                    alert('Error initializing Plaid Link. Please try again.');
+                    return;
+                }
+                const linkToken = tokenData.link_token;
+
+                // 2. Initialize Plaid Link
+                const plaidLink = Plaid.create({
+                    token: linkToken,
+                    onSuccess: async (public_token, metadata) => {
+                        console.log('Plaid Link success!');
+                        console.log('Public Token:', public_token);
+                        console.log('Metadata:', metadata);
+
+                        // 3. Send the public_token to our server
+                        const exchangeResponse = await fetch('/exchange_public_token', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ public_token: public_token }),
+                        });
+                        const exchangeData = await exchangeResponse.json();
+
+                        if (exchangeData.error) {
+                            console.error('Error exchanging public token:', exchangeData.error);
+                            alert('Error processing your account. Please try again.');
+                        } else {
+                            console.log(exchangeData.message);
+                            alert('Account connected successfully!');
+                            document.getElementById('post-link-actions').style.display = 'block'; // Show the link
+                        }
+                    },
+                    onLoad: () => {
+                        console.log('Plaid Link loaded');
+                    },
+                    onExit: (err, metadata) => {
+                        console.log('Plaid Link exited');
+                        if (err != null) {
+                            console.error('Plaid Link error:', err);
+                        }
+                        console.log('Metadata:', metadata);
+                    },
+                    onEvent: (eventName, metadata) => {
+                        console.log('Plaid Link event:', eventName, metadata);
+                    }
+                });
+
+                plaidLink.open();
+
+            } catch (error) {
+                console.error('Error in Plaid Link initialization:', error);
+                alert('An unexpected error occurred. Please try again.');
+            }
+        };
+
+        linkButton.addEventListener('click', मानव);
+    </script>
+</body>
+</html>
