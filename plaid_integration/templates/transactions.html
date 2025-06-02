@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Transactions</title>
+    <style>
+        table {
+            width: 80%;
+            border-collapse: collapse;
+            margin: 20px auto;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .error {
+            color: red;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .no-transactions {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .container {
+            text-align: center; /* Center the link */
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Transactions</h1>
+        <p><a href="/">Back to Home</a></p>
+    </div>
+
+    {% if error_message %}
+        <p class="error">{{ error_message }}</p>
+        {% if plaid_error_details %}
+            <p class="error" style="font-size: 0.8em; color: #555;">Details: {{ plaid_error_details }}</p>
+        {% endif %}
+    {% elif transactions %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Name</th>
+                    <th>Amount</th>
+                    <th>Currency</th>
+                    <th>Category</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for transaction in transactions %}
+                    <tr>
+                        <td>{{ transaction.date }}</td>
+                        <td>{{ transaction.name }}</td>
+                        <td>{{ transaction.amount }}</td>
+                        <td>{{ transaction.iso_currency_code }}</td>
+                        <td>{{ transaction.category[0] if transaction.category else 'N/A' }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% elif transactions is none %}
+        {# This case handles when transactions is explicitly None, e.g. initial load before attempting to fetch #}
+        {# Or when an error occurred and transactions is set to None #}
+        {# The error_message should cover this, but this is a fallback. #}
+         <p class="no-transactions">Could not load transactions. {{ error_message | default('Please try again or connect an account.') }}</p>
+    {% else %}
+        {# This means transactions is an empty list, not None #}
+        <p class="no-transactions">No transactions found for the selected period.</p>
+    {% endif %}
+</body>
+</html>
